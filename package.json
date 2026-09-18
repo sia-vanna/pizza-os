@@ -1,0 +1,20 @@
+{
+  "name": "pizza-production",
+  "version": "1.0.0",
+  "description": "```bash hacking pizza etc ```",
+  "homepage": "https://github.com/sia-vanna/pizza-os#readme",
+  "bugs": {
+    "url": "https://github.com/sia-vanna/pizza-os/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sia-vanna/pizza-os.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
