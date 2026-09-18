@@ -1,14 +1,12 @@
 name: deploy pizza-os
-
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
-  workflow_dispatch: # lets us manually hit "Run workflow"
+  workflow_dispatch:
 
 jobs:
-  # 1. Test build on PRs (doesn't deploy)
   build-check:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
@@ -16,11 +14,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: '20' }
-      - run: npm ci
+      - run: npm install
       - run: npm run build || echo "kernel build skipped on runner"
       - run: node -c server.js && echo "✅ server.js valid"
 
-  # 2. Real deploy only on main + manual
   deploy:
     if: github.event_name!= 'pull_request'
     runs-on: ubuntu-latest
@@ -31,7 +28,7 @@ jobs:
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.DROPLET_HOST }}
-          username: ${{ secrets.DROPLET_USER }} # root
+          username: ${{ secrets.DROPLET_USER }}
           key: ${{ secrets.DROPLET_SSH_KEY }}
           source: "."
           target: "/opt/pizza-os"
@@ -46,7 +43,7 @@ jobs:
           script: |
             set -e
             cd /opt/pizza-os
-            npm ci --production
+            npm install --production
             sudo mkdir -p /var/www/pizza-os
             sudo cp -r public/* /var/www/pizza-os/ 2>/dev/null || echo "no public/"
             sudo chown -R www-data:www-data /var/www/pizza-os
@@ -54,5 +51,12 @@ jobs:
             pm2 restart pizza-os || npm run prod
             pm2 save
             sudo nginx -t && sudo systemctl reload nginx
-            echo "🍕 Deployed ${{ github.actor }} -> https://hackingpizza.ca - commit ${{ github.sha }}"
+            echo "🍕 Deployed ${{ github.actor }} -> https://hackingpizza.ca - ${{ github.sha }}"
             pm2 list
+
+      - name: Notify Discord
+        if: always()
+        run: |
+          STATUS="${{ job.status }}"
+          if [ "$STATUS" = "success" ]; then COLOR=3066993; EMOJI="🍕✅"; MSG="Deployed!"; else COLOR=15158332; EMOJI="🍕❌"; MSG="FAILED!"; fi
+          curl -s -H "Content-Type: application/json" -d "{\"embeds\": [{\"title\": \"$EMOJI $MSG - ${{ github.actor }}\", \"color\": $COLOR, \"fields\": [{\"name\": \"Commit\", \"value\": \"\`${{ github.sha }}\`\"}, {\"name\": \"Site\", \"value\": \"[hackingpizza.ca](https://hackingpizza.ca)\"}], \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}]}" ${{ secrets.DISCORD_WEBHOOK_URL }} || echo "no webhook set"
