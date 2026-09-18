@@ -8,7 +8,7 @@ npm run dev
 ```bash
 npm run prod
 ```
-## or for CI/CD it does:
+### or for CI/CD it does:
 ```bash
 npm run restart
 ```
