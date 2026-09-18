@@ -1,6 +1,6 @@
 {
   "name": "pizza-os",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "We are programming an OS - bare metal pizza kernel @ 1MB",
   "homepage": "https://github.com/sia-vanna/pizza-os#readme",
   "bugs": {
