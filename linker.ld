@@ -1,24 +1,43 @@
 ENTRY(_start)
+
 PHDRS
 {
-  text PT_LOAD FLAGS(5); /* R+X */
+  text PT_LOAD FLAGS(5);
   note PT_NOTE;
-  data PT_LOAD FLAGS(6); /* R+W */
+  data PT_LOAD FLAGS(6);
 }
 
 SECTIONS
 {
   . = 1M;
-  .text : {
+
+  .text :
+  {
     *(.multiboot2)
     *(.text*)
+    *(.rodata*)
   } :text
 
-  .note : {
+  .note :
+  {
     *(.note)
   } :note
 
-  .rodata : { *(.rodata*) } :text
-  .data : { *(.data*) } :data
-  .bss : { *(COMMON) *(.bss*) } :data
+  .data :
+  {
+    *(.data*)
+  } :data
+
+  .bss :
+  {
+    *(COMMON)
+    *(.bss*)
+  } :data
+
+  /DISCARD/ :
+  {
+    *(.note.GNU-stack)
+    *(.eh_frame*)
+    *(.comment)
+  }
 }

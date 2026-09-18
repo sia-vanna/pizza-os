@@ -1,3 +1,5 @@
+section .note.GNU-stack noalloc noexec nowrite progbits
+
 section .multiboot2
 align 8
 mb2_start:
@@ -15,9 +17,9 @@ align 4
   dd 4
   dd 18
   db "Xen",0
-  align 4
+align 4
   dd _start
-  align 4
+align 4
 
 section .text
 global _start
@@ -26,8 +28,10 @@ _start:
   cli
   mov esp, stack_top
   call kernel_main
-.hang: hlt
+.hang:
+  hlt
   jmp .hang
+
 section .bss
 align 16
 stack_bottom:
