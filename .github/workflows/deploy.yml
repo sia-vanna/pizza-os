@@ -1,0 +1,52 @@
+name: deploy pizza-os
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to droplet
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          source: "."
+          target: "/opt/pizza-os"
+
+      - name: Restart services
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          script: |
+            set -e
+            cd /opt/pizza-os
+
+            # install deps
+            npm ci --production
+
+            # deploy frontend to nginx root
+            sudo mkdir -p /var/www/pizza-os
+            sudo cp -r public/* /var/www/pizza-os/ 2>/dev/null || echo "no public/ folder yet"
+            sudo chown -R www-data:www-data /var/www/pizza-os
+
+            # build kernel if toolchain exists, ignore if not
+            npm run build 2>&1 || echo "kernel build skipped (no nasm/g++ on GH runner - will build on droplet via button)"
+
+            # restart / start with pm2 using our npm scripts
+            npm install -g pm2 || true
+            pm2 restart pizza-os || npm run prod
+            pm2 save
+
+            # reload nginx
+            sudo nginx -t && sudo systemctl reload nginx
+
+            echo "🍕 Deployed! https://hackingpizza.ca"
+            pm2 list

@@ -1,0 +1,23 @@
+#!/bin/bash
+set -e
+echo "assembling..."
+nasm -f elf32 boot.asm -o boot.o
+echo "compiling kernel.cpp..."
+g++ -m32 -ffreestanding -fno-exceptions -fno-rtti -nostdlib -c kernel.cpp -o kernel.o
+echo "linking..."
+ld -m elf_i386 -T linker.ld -o pizza-os.bin boot.o kernel.o -nostdlib
+echo "making ISO..."
+mkdir -p iso/boot/grub
+cp pizza-os.bin iso/boot/
+cat > iso/boot/grub/grub.cfg <<'CFG'
+set timeout=0
+set default=0
+menuentry "pizza-os // impartial" {
+  multiboot /boot/pizza-os.bin
+  boot
+}
+CFG
+grub-mkrescue -o pizza-os.iso iso
+echo "✅ built pizza-os.iso"
+echo "booting in QEMU..."
+qemu-system-i386 -cdrom pizza-os.iso -display gtk

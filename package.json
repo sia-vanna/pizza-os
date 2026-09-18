@@ -1,7 +1,7 @@
 {
-  "name": "pizza-production",
+  "name": "pizza-os",
   "version": "1.0.0",
-  "description": "```bash hacking pizza etc ```",
+  "description": "We are programming an OS - bare metal pizza kernel @ 1MB",
   "homepage": "https://github.com/sia-vanna/pizza-os#readme",
   "bugs": {
     "url": "https://github.com/sia-vanna/pizza-os/issues"
@@ -11,10 +11,25 @@
     "url": "git+https://github.com/sia-vanna/pizza-os.git"
   },
   "license": "ISC",
-  "author": "",
+  "author": "Vanna Bee, Troy James",
   "type": "commonjs",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "nodemon server.js",
+    "start": "node server.js",
+    "prod": "NODE_ENV=production pm2 start server.js --name pizza-os",
+    "restart": "pm2 restart pizza-os",
+    "logs": "pm2 logs pizza-os",
+    "stop": "pm2 stop pizza-os",
+    "build": "nasm -f elf32 boot.asm -o boot.o && g++ -m32 -ffreestanding -O2 -c kernel.cpp -o kernel.o && g++ -m32 -ffreestanding -O2 -c ai_model.cpp -o ai_model.o && ld -m elf_i386 -T linker.ld -o pizza-os.bin boot.o kernel.o ai_model.o -nostdlib && ls -lh pizza-os.bin",
+    "check": "grub-file --is-x86-multiboot2 pizza-os.bin && echo '✅ VALID' || echo '❌ INVALID'",
+    "qemu": "qemu-system-i386 -kernel pizza-os.bin -nographic"
+  },
+  "keywords": ["osdev", "bare-metal", "kernel", "multiboot2"],
+  "dependencies": {
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
   }
 }
