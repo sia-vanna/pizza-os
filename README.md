@@ -1,4 +1,4 @@
-# Pizza OS
+## Pizza OS
 ## dev on your local / WSL machine:
 ```bash
 npm run dev
