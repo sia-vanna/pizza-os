@@ -3,21 +3,39 @@ name: deploy pizza-os
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch: # lets us manually hit "Run workflow"
 
 jobs:
+  # 1. Test build on PRs (doesn't deploy)
+  build-check:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: npm ci
+      - run: npm run build || echo "kernel build skipped on runner"
+      - run: node -c server.js && echo "✅ server.js valid"
+
+  # 2. Real deploy only on main + manual
   deploy:
+    if: github.event_name!= 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Deploy to droplet
+      - name: Deploy files
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.DROPLET_HOST }}
-          username: ${{ secrets.DROPLET_USER }}
+          username: ${{ secrets.DROPLET_USER }} # root
           key: ${{ secrets.DROPLET_SSH_KEY }}
           source: "."
           target: "/opt/pizza-os"
+          rm: false
 
       - name: Restart services
         uses: appleboy/ssh-action@v1.0.3
@@ -28,25 +46,13 @@ jobs:
           script: |
             set -e
             cd /opt/pizza-os
-
-            # install deps
             npm ci --production
-
-            # deploy frontend to nginx root
             sudo mkdir -p /var/www/pizza-os
-            sudo cp -r public/* /var/www/pizza-os/ 2>/dev/null || echo "no public/ folder yet"
+            sudo cp -r public/* /var/www/pizza-os/ 2>/dev/null || echo "no public/"
             sudo chown -R www-data:www-data /var/www/pizza-os
-
-            # build kernel if toolchain exists, ignore if not
-            npm run build 2>&1 || echo "kernel build skipped (no nasm/g++ on GH runner - will build on droplet via button)"
-
-            # restart / start with pm2 using our npm scripts
             npm install -g pm2 || true
             pm2 restart pizza-os || npm run prod
             pm2 save
-
-            # reload nginx
             sudo nginx -t && sudo systemctl reload nginx
-
-            echo "🍕 Deployed! https://hackingpizza.ca"
+            echo "🍕 Deployed ${{ github.actor }} -> https://hackingpizza.ca - commit ${{ github.sha }}"
             pm2 list
