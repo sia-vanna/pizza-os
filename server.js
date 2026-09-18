@@ -47,4 +47,4 @@ app.post('/api/iso', (req, res) => run(
   res
 ));
 
-app.listen(3000, () => console.log(`🍕 http://localhost:3000 BIN=${BIN}`));
+app.listen(3000, () => console.log(`🍕 http://localhost:3000 BIN=${BIN}`));// troy was here
