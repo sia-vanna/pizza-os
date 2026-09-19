@@ -17,11 +17,10 @@ align 4
   dd 4
   dd 18
   db "Xen",0
-align 4
   dd _start
-align 4
 
 section .text
+bits 32
 global _start
 extern kernel_main
 _start:
