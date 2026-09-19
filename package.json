@@ -3,8 +3,13 @@
   "version": "1.0.4",
   "description": "We are programming an OS - bare metal pizza kernel @ 1MB",
   "homepage": "https://github.com/sia-vanna/pizza-os#readme",
-  "bugs": { "url": "https://github.com/sia-vanna/pizza-os/issues" },
-  "repository": { "type": "git", "url": "git+https://github.com/sia-vanna/pizza-os.git" },
+  "bugs": {
+    "url": "https://github.com/sia-vanna/pizza-os/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sia-vanna/pizza-os.git"
+  },
   "license": "ISC",
   "author": "Vanna Bee, Troy James",
   "type": "commonjs",
@@ -21,7 +26,16 @@
     "build": "npm run k:build",
     "check": "npm run k:check"
   },
-  "keywords": ["osdev","bare-metal","kernel","multiboot2"],
-  "dependencies": { "express": "^5.2.1" },
-  "devDependencies": { "nodemon": "^3.1.0" }
+  "keywords": [
+    "osdev",
+    "bare-metal",
+    "kernel",
+    "multiboot2"
+  ],
+  "dependencies": {
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  }
 }

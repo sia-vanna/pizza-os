@@ -1,5 +1,6 @@
 {
   "watch": ["server.js"],
-  "ignore": ["*.o", "*.bin", "*.iso", "iso", "public"],
-  "ext": "js,json"
+  "ignore": ["*.o", "*.bin", "*.iso", "iso", "public/*.bin", "public/*.iso"],
+  "ext": "js,json",
+  "delay": 500
 }
