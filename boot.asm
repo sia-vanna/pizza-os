@@ -25,6 +25,8 @@ extern kernel_main
 _start:
   cli
   mov esp, stack_top
+  push ebx        ; multiboot info pointer (GRUB puts this in ebx)
+  push eax        ; multiboot2 magic (GRUB puts this in eax)
   call kernel_main
 .hang: hlt
   jmp .hang

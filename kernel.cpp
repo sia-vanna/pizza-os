@@ -1,4 +1,5 @@
-// kernel.cpp — impartial OS kernel
+#include "mm.h"
+
 static volatile unsigned short* vga = (unsigned short*)0xB8000;
 static int cx = 0, cy = 0;
 
@@ -13,7 +14,6 @@ static inline void outb(unsigned short port, unsigned char val){
 
 static inline void serial(char c){
   outb(0xE9, c); // qemu debug
-  // 0x3F8 needs dx because >255, so use separate
   asm volatile("outb %0, %1" :: "a"(c), "d"((unsigned short)0x3F8));
 }
 
@@ -49,6 +49,13 @@ void print_int(int n, unsigned char color){
   print(buf, color);
 }
 
+void print_hex(uint64_t v, unsigned char color){
+  char buf[17];
+  for(int j=15;j>=0;j--){ int nib = v & 0xF; buf[j] = nib < 10 ? '0'+nib : 'a'+nib-10; v >>= 4; }
+  buf[16] = 0;
+  print(buf, color);
+}
+
 void print_dollars(int cents, unsigned char color){
   int dollars = cents / 100;
   int rem = cents % 100;
@@ -60,20 +67,36 @@ void print_dollars(int cents, unsigned char color){
 }
 
 struct Order { const char* pizza; int price_cents; int cost_cents; };
-int calc_profit(Order* orders, int n){
-  int rev=0,cost=0;
-  for(int i=0;i<n;i++){ rev+=orders[i].price_cents; cost+=orders[i].cost_cents; }
-  return rev - cost;
-}
 
-extern "C" void kernel_main(){
+extern "C" void kernel_main(uint32_t magic, uint32_t mb_info_ptr){
   clear();
   print("================================================================================\n", 0x0C);
-  print(" hacking-pizza.ca // impartial OS // v0.1 // pizza-os.bin @ 1MB\n", 0x0E);
+  print(" hacking-pizza.ca // impartial OS // v0.2 // pizza-os.bin @ 1MB\n", 0x0E);
   print("================================================================================\n\n", 0x0C);
   print("[OK] ", 0x0A); print("C++ kernel loaded\n", 0x07);
   print("[OK] ", 0x0A); print("VGA 0xB8000 initialized (80x25)\n", 0x07);
   print("[OK] ", 0x0A); print("No telemetry. No account. No feed.\n\n", 0x08);
+
+  // --- DEBUG: raw multiboot2 handoff values ---
+  print("[DEBUG] magic=0x", 0x0D); print_hex(magic, 0x0F); print("\n", 0x0D);
+  print("[DEBUG] mb_info_ptr=0x", 0x0D); print_hex(mb_info_ptr, 0x0F); print("\n\n", 0x0D);
+  // ---------------------------------------------
+
+  bool real_map = mm_init(magic, mb_info_ptr);
+  if (real_map) {
+    print("[OK] ", 0x0A); print("Real multiboot2 memory map found\n", 0x07);
+  } else {
+    print("[WARN] ", 0x0E); print("No multiboot2 map (PVH boot) - using fallback range\n", 0x07);
+  }
+  mm_print_map();
+
+  print("\n[TEST] ", 0x0B); print("Bump allocator test:\n", 0x07);
+  void* p1 = mm_alloc_pages(1);
+  void* p2 = mm_alloc_pages(1);
+  print("  alloc1 = 0x", 0x07); print_hex((uint64_t)(uintptr_t)p1, 0x0F); print("\n", 0x07);
+  print("  alloc2 = 0x", 0x07); print_hex((uint64_t)(uintptr_t)p2, 0x0F); print("\n", 0x07);
+
+  print("\n", 0x07);
   Order sample[] = { {"Pepperoni 14\" ", 1899, 620}, {"Meat Lovers ", 2199, 780}, {"Cheese 12\" ", 1599, 410}, {"Veggie Deluxe", 2099, 690}, };
   int n=4;
   print(" ORDERS IN RAM:\n", 0x0B);
@@ -87,7 +110,6 @@ extern "C" void kernel_main(){
   print(" COST: ", 0x07); print_dollars(cost, 0x0C); print("\n", 0x07);
   print(" PROFIT: ", 0x07); print_dollars(profit, 0x0E); print(" (", 0x08); print_int((profit*100)/revenue, 0x08); print("% margin)", 0x08);
   print("\n\n------------------------------------\n", 0x08);
-  print("Next: JS runtime from disk...\n", 0x08);
   print("pizza-os> ", 0x0A); print("_", 0x0F);
   while(1){ __asm__ volatile("hlt"); }
 }

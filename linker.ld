@@ -18,7 +18,20 @@ SECTIONS
     *(.note)
   } :note
 
+<<<<<<< Updated upstream
   .rodata : { *(.rodata*) } :text
   .data : { *(.data*) } :data
   .bss : { *(COMMON) *(.bss*) } :data
+=======
+  .data :
+  {
+    *(.data*)
+  } :data
+
+  .bss :
+  {
+    *(.bss*)
+    *(COMMON)
+  } :data
+>>>>>>> Stashed changes
 }
