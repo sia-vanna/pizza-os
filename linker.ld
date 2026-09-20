@@ -1,28 +1,37 @@
 ENTRY(_start)
+
 PHDRS
 {
-  text PT_LOAD FLAGS(5); /* R+X */
-  note PT_NOTE;
-  data PT_LOAD FLAGS(6); /* R+W */
+  text PT_LOAD FLAGS(5);
+  rodata PT_LOAD FLAGS(4);
+  data PT_LOAD FLAGS(6);
+  note PT_NOTE FLAGS(4);
 }
 
 SECTIONS
 {
   . = 1M;
-  .text : {
+
+  .multiboot2 :
+  {
     *(.multiboot2)
-    *(.text*)
   } :text
 
-  .note : {
+  .note :
+  {
     *(.note)
   } :note
 
-<<<<<<< Updated upstream
-  .rodata : { *(.rodata*) } :text
-  .data : { *(.data*) } :data
-  .bss : { *(COMMON) *(.bss*) } :data
-=======
+  .text :
+  {
+    *(.text*)
+  } :text
+
+  .rodata :
+  {
+    *(.rodata*)
+  } :rodata
+
   .data :
   {
     *(.data*)
@@ -33,5 +42,4 @@ SECTIONS
     *(.bss*)
     *(COMMON)
   } :data
->>>>>>> Stashed changes
 }
