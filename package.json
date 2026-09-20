@@ -1,6 +1,6 @@
 {
   "name": "pizza-os",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "We are programming an OS - bare metal pizza kernel @ 1MB",
   "homepage": "https://github.com/sia-vanna/pizza-os#readme",
   "bugs": {
@@ -16,16 +16,6 @@
   "main": "server.js",
   "scripts": {
     "dev": "nodemon server.js",
-<<<<<<< Updated upstream
-    "start": "node server.js",
-    "prod": "NODE_ENV=production pm2 start server.js --name pizza-os",
-    "restart": "pm2 restart pizza-os",
-    "logs": "pm2 logs pizza-os",
-    "stop": "pm2 stop pizza-os",
-    "build": "nasm -f elf32 boot.asm -o boot.o && g++ -m32 -ffreestanding -O2 -c kernel.cpp -o kernel.o && g++ -m32 -ffreestanding -O2 -c ai_model.cpp -o ai_model.o && ld -m elf_i386 -T linker.ld -o pizza-os.bin boot.o kernel.o ai_model.o -nostdlib && ls -lh pizza-os.bin",
-    "check": "grub-file --is-x86-multiboot2 pizza-os.bin && echo '✅ VALID' || echo '❌ INVALID'",
-    "qemu": "qemu-system-i386 -kernel pizza-os.bin -nographic"
-=======
     "prod": "NODE_ENV=production pm2 start server.js --name pizza-os --update-env",
     "setup": "./scripts/setup.sh",
     "k:clean": "rm -f *.o *.bin *.iso && rm -rf iso/",
@@ -36,9 +26,13 @@
     "k:qemu-iso": "npm run k:build && npm run k:iso && timeout 8 qemu-system-i386 -cdrom pizza-os.iso -nographic",
     "build": "npm run k:build",
     "check": "npm run k:check"
->>>>>>> Stashed changes
   },
-  "keywords": ["osdev", "bare-metal", "kernel", "multiboot2"],
+  "keywords": [
+    "osdev",
+    "bare-metal",
+    "kernel",
+    "multiboot2"
+  ],
   "dependencies": {
     "express": "^5.2.1"
   },
