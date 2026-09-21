@@ -6,3 +6,4 @@ Bare metal pizza kernel @ 1MB — QEMU + Node dashboard
 ```bash
 npm install
 npm run dev
+```

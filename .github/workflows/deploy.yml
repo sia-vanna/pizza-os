@@ -5,22 +5,23 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
-  workflow_dispatch: # lets us manually hit "Run workflow"
+  workflow_dispatch:
 
 jobs:
-  # 1. Test build on PRs (doesn't deploy)
   build-check:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: '20' }
+        with:
+          node-version: '20'
       - run: npm ci
-      - run: npm run build || echo "kernel build skipped on runner"
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq nasm g++-multilib binutils grub-common grub-pc-bin xorriso mtools > /dev/null
+      - run: npm run k:build
+      - run: npm run k:check
       - run: node -c server.js && echo "✅ server.js valid"
 
-  # 2. Real deploy only on main + manual
   deploy:
     if: github.event_name!= 'pull_request'
     runs-on: ubuntu-latest
@@ -31,13 +32,14 @@ jobs:
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.DROPLET_HOST }}
-          username: ${{ secrets.DROPLET_USER }} # root
+          username: ${{ secrets.DROPLET_USER }}
           key: ${{ secrets.DROPLET_SSH_KEY }}
-          source: "."
+          source: "server.js,package.json,package-lock.json,public/,scripts/,boot.asm,kernel.cpp,mm.cpp,ai_model.cpp,linker.ld"
           target: "/opt/pizza-os"
-          rm: false
+          strip_components: 0
+          overwrite: true
 
-      - name: Restart services
+      - name: Build + Restart
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.DROPLET_HOST }}
@@ -46,13 +48,33 @@ jobs:
           script: |
             set -e
             cd /opt/pizza-os
-            npm ci --production
+
+            # install deps for building kernel + running server
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq nasm g++-multilib binutils qemu-system-x86 grub-common grub-pc-bin xorriso mtools > /dev/null
+
+            npm ci --include=dev
+
+            # build kernel
+            npm run k:build || echo "build failed but continuing"
+            npm run k:check || true
+
+            # copy bin to web root
             sudo mkdir -p /var/www/pizza-os
             sudo cp -r public/* /var/www/pizza-os/ 2>/dev/null || echo "no public/"
             sudo chown -R www-data:www-data /var/www/pizza-os
+
+            # pm2 without sudo!
+            export PATH=$PATH:/usr/local/bin
             npm install -g pm2 || true
-            pm2 restart pizza-os || npm run prod
+
+            pm2 restart pizza-os --update-env || NODE_ENV=production pm2 start server.js --name pizza-os --update-env
             pm2 save
-            sudo nginx -t && sudo systemctl reload nginx
-            echo "🍕 Deployed ${{ github.actor }} -> https://hackingpizza.ca - commit ${{ github.sha }}"
+
+            # only reload nginx if config exists
+            if [ -f /etc/nginx/sites-enabled/pizza ]; then
+              sudo nginx -t && sudo systemctl reload nginx
+            fi
+
+            echo "🍕 Deployed ${{ github.actor }} -> https://hackingpizza.ca - ${{ github.sha }}"
             pm2 list
