@@ -3,13 +3,11 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Deploy files
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -19,7 +17,6 @@ jobs:
           source: "server.js,package.json,package-lock.json,public/,scripts/,boot.asm,kernel.cpp,mm.cpp,ai_model.cpp,linker.ld"
           target: "/opt/pizza-os"
           overwrite: true
-
       - name: Build + Restart
         uses: appleboy/ssh-action@v1.0.3
         with:
