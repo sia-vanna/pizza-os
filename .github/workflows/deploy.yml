@@ -1,3 +1,25 @@
+name: deploy pizza-os
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy files
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          source: "server.js,package.json,package-lock.json,public/,scripts/,boot.asm,kernel.cpp,mm.cpp,ai_model.cpp,linker.ld"
+          target: "/opt/pizza-os"
+          overwrite: true
+
       - name: Build + Restart
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -7,34 +29,18 @@
           script: |
             set -e
             cd /opt/pizza-os
-
-            # FIX NODE 18 -> 20
-            if ! node -v | grep -q "v20"; then
+            if! node -v | grep -q "v20"; then
               curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
               sudo apt-get install -y nodejs
             fi
-            node -v
-
             sudo apt-get update -qq
-            sudo apt-get install -y -qq nasm g++-multilib binutils grub-common grub-pc-bin xorriso mtools > /dev/null
-
-            # FIX: use npm install not npm ci (lock out of sync)
+            sudo apt-get install -y -qq nasm g++-multilib binutils qemu-system-x86 grub-common grub-pc-bin xorriso mtools > /dev/null
             npm install --include=dev
             npm install -g pm2 || true
-            export PATH=$PATH:/usr/local/bin:/usr/local/lib
-
-            npm run k:build || echo "build failed"
-            npm run k:check || true
-
+            npm run k:build || true
             sudo mkdir -p /var/www/pizza-os
             sudo cp -r public/* /var/www/pizza-os/ 2>/dev/null || true
             sudo chown -R www-data:www-data /var/www/pizza-os
-
             pm2 restart pizza-os --update-env || NODE_ENV=production pm2 start server.js --name pizza-os --update-env
             pm2 save
-
-            if [ -f /etc/nginx/sites-enabled/pizza ]; then
-              sudo nginx -t && sudo systemctl reload nginx
-            fi
-
             pm2 list
