@@ -30,7 +30,7 @@ jobs:
             set -e
             cd /opt/pizza-os
 
-            if! node -v | grep -q "v20"; then
+            if ! node -v | grep -q "v20"; then
               curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
               sudo apt-get install -y nodejs
             fi
