@@ -1,68 +1,71 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+<meta charset="UTF-8">
 <title>pizza-os // hacking-pizza.ca</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<style>
-:root{--orange:#ff6a00;--bg:#0a0a0a;--panel:#111;--border:#222}
-*{box-sizing:border-box} body{background:var(--bg);color:#ccc;font-family:ui-monospace,Menlo,monospace;padding:20px;max-width:900px;margin:0 auto}
-h1{color:var(--orange);letter-spacing:-1px}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:20px 0}
-.card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px}
-button{background:var(--orange);border:0;padding:12px 18px;margin:4px;border-radius:8px;font-weight:bold;cursor:pointer;color:#000;transition:transform .05s}
-button:active{transform:scale(.97)} button.secondary{background:#222;color:#ccc;border:1px solid #333}
-#log{background:#000;padding:14px;white-space:pre-wrap;border:1px solid var(--border);height:520px;overflow:auto;border-radius:10px;font-size:13px;line-height:1.4}
-.ok{color:#2ecc71} .bad{color:#ff4444} .muted{color:#666} a{color:var(--orange)}
-.badge{display:inline-block;background:#1a1a1a;border:1px solid #333;padding:2px 8px;border-radius:20px;font-size:11px;margin-left:8px}
-</style>
+<link rel="stylesheet" href="/style.css">
 </head>
 <body>
-<h1>pizza-os <span class="muted">// impartial</span> <span class="badge">v0.2.1 multiboot2</span></h1>
-<p class="muted">bare metal kernel @ 1MB | no telemetry | <a href="https://github.com/sia-vanna/pizza-os" target="_blank">github</a> | <a href="https://hacking-pizza.ca">hacking-pizza.ca</a></p>
+<header>
+  <div class="brand">
+    <span class="logo">🍕</span>
+    <h1>pizza-os <span class="muted">// impartial OS</span></h1>
+    <span class="badge">v0.2.1 • 12K • 1MB</span>
+    <span class="badge ok">✅ MULTIBOOT2</span>
+  </div>
+  <nav>
+    <a href="https://github.com/sia-vanna/pizza-os" target="_blank">github</a>
+    <a href="https://hackingpizza.ca">hackingpizza.ca123</a>
+  </nav>
+</header>
 
-<div class="grid">
-<div class="card">
-<h3>Kernel Build</h3>
-<button onclick="go('build')">Build + AI</button>
-<button class="secondary" onclick="go('check')">Check Multiboot2</button>
-<button class="secondary" onclick="go('qemu')" title="Fast PVH direct - shows fallback">Boot QEMU 5s (PVH)</button>
-<button onclick="go('qemu-iso')" style="background:#2ecc71">Boot QEMU ISO (Real Map) ⭐</button>
-</div>
-<div class="card">
-<h3>Live ISO</h3>
-<p class="muted" style="font-size:13px">After build, pizza-os.bin is ready to be written to USB or booted as ISO. ISO = real e820 map.</p>
-<button class="secondary" onclick="go('iso')">Make ISO</button>
-<button class="secondary" onclick="window.open('/pizza-os.bin')">Download .bin</button>
-<button class="secondary" onclick="window.open('/pizza-os.iso')">Download .iso</button>
-</div>
-</div>
+<main>
+  <div class="grid">
+    <div class="card primary">
+      <h3>⚙️ Kernel Lab</h3>
+      <p>Bare metal C++ @ 0x100000 — no stdlib, VGA 0xB8000, e820 parser</p>
+      <div class="actions">
+        <button class="orange" onclick="go('build')">Build + AI</button>
+        <button onclick="go('check')">Check Multiboot2</button>
+      </div>
+      <div class="actions">
+        <button class="success" onclick="go('qemu-iso')">▶ Boot ISO (Real Map) ⭐</button>
+        <button class="ghost" onclick="go('qemu')">Boot BIN 5s (PVH)</button>
+      </div>
+    </div>
 
-<pre id="log">ready... > click Build to compile boot.asm + kernel.cpp + ai_model.cpp
-> NEW: Click "Boot QEMU ISO (Real Map)" for full memory map
-> Old "Boot QEMU 5s" = PVH fallback (fast dev only)
-> CI/CD: push to main -> auto deploys here</pre>
+    <div class="card">
+      <h3>💿 Live Image</h3>
+      <p>Ready for USB / QEMU -cdrom. Real BIOS map via GRUB.</p>
+      <div class="actions">
+        <button onclick="go('iso')">Make ISO</button>
+        <button class="ghost" onclick="dl('pizza-os.bin')">.bin 12K</button>
+        <button class="ghost" onclick="dl('pizza-os.iso')">.iso 1.5M</button>
+      </div>
+      <div class="stats" id="stats">boot: -<br>map: -<br>alloc: -</div>
+    </div>
+  </div>
 
-<script>
-const logEl = document.getElementById('log');
-async function go(cmd){
- logEl.textContent = `> ${cmd} running...\n> time: ${new Date().toLocaleTimeString()}\n\n`;
- try{
-   let r = await fetch('/api/'+cmd,{method:'POST'});
-   let t = await r.text();
-   // colorize
-   t = t.replace(/\[OK\].*/g, m => `✅ ${m}`).replace(/\[INFO\].*/g, m => `ℹ️ ${m}`);
-   logEl.textContent = t + `\n\n--- ${cmd} done @ ${new Date().toLocaleTimeString()} ---`;
-   if(cmd==='qemu' && t.includes('fallback')) {
-     logEl.textContent += `\n\n💡 TIP: This is PVH fallback mode. Click "Boot QEMU ISO (Real Map)" for real e820.`;
-   }
-   if(cmd==='qemu-iso' && t.includes('Real memory map')) {
-     logEl.textContent += `\n\n🎉 GRUB multiboot2 SUCCESS - real memory map!`;
-   }
- }catch(e){
-   logEl.textContent = `❌ ${e.message}\n\nIs server.js running? pm2 logs pizza-os`;
- }
- logEl.scrollTop = logEl.scrollHeight;
-}
-</script>
+  <div class="term-wrap">
+    <div class="term-header">
+      <span>serial0 • qemu-system-i386 • pizza-os.bin</span>
+      <div>
+        <span id="status" class="status">ready</span>
+        <button class="mini" onclick="clearLog()">clear</button>
+      </div>
+    </div>
+    <pre id="log">> pizza-os lab ready
+> click Build + AI to compile boot.asm + kernel.cpp + mm.cpp + ai_model.cpp
+> then Boot ISO (Real Map) for real e820
+
+CI/CD: push to main -> droplet @ /opt/pizza-os
+local: npm install && npm run dev
+</pre>
+  </div>
+</main>
+
+<footer>no telemetry • no account • no feed • just pizza — Vanna Bee, Troy James</footer>
+<script src="/app.js"></script>
 </body>
 </html>

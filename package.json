@@ -15,22 +15,24 @@
   "type": "commonjs",
   "main": "server.js",
   "scripts": {
-    "dev": "npx nodemon server.js",
-    "prod": "npm run k:build && NODE_ENV=production pm2 start server.js --name pizza-os --update-env",
+    "dev": "nodemon server.js",
+    "prod": "npm run k:build && npm run k:iso && NODE_ENV=production pm2 start server.js --name pizza-os --update-env || pm2 restart pizza-os --update-env",
     "setup": "./scripts/setup.sh",
-    "k:clean": "rm -f *.o *.bin *.iso && rm -rf iso/",
-    "k:build": "nasm -f elf32 boot.asm -o boot.o && g++ -m32 -ffreestanding -O2 -c kernel.cpp -o kernel.o && g++ -m32 -ffreestanding -O2 -c mm.cpp -o mm.o && g++ -m32 -ffreestanding -O2 -c ai_model.cpp -o ai_model.o && ld -m elf_i386 -T linker.ld -o pizza-os.bin boot.o kernel.o mm.o ai_model.o -nostdlib && cp pizza-os.bin public/pizza-os.bin 2>/dev/null || true && ls -lh pizza-os.bin",
-    "k:check": "grub-file --is-x86-multiboot2 pizza-os.bin && echo '✅ VALID multiboot2' || echo '❌ INVALID'; readelf -l pizza-os.bin | grep -A2 NOTE; readelf -n pizza-os.bin | head -20",
-    "k:qemu": "npm run k:build && timeout 8 qemu-system-i386 -kernel pizza-os.bin -nographic",
-    "k:iso": "mkdir -p iso/boot && cp pizza-os.bin iso/boot/ && grub-mkrescue -o pizza-os.iso iso/ && ls -lh pizza-os.iso",
-    "k:qemu:iso": "qemu-system-i386 -cdrom pizza-os.iso -display curses",
+    "k:clean": "rm -f *.o *.bin *.iso && rm -rf iso/ && rm -f public/pizza-os.bin public/pizza-os.iso",
+    "k:build": "nasm -f elf32 boot.asm -o boot.o && g++ -m32 -ffreestanding -O2 -c kernel.cpp -o kernel.o && g++ -m32 -ffreestanding -O2 -c mm.cpp -o mm.o && g++ -m32 -ffreestanding -O2 -c ai_model.cpp -o ai_model.o && ld -m elf_i386 -T linker.ld -o pizza-os.bin boot.o kernel.o mm.o ai_model.o -nostdlib && mkdir -p public && cp pizza-os.bin public/pizza-os.bin && ls -lh pizza-os.bin && grub-file --is-x86-multiboot2 pizza-os.bin && echo '✅ VALID multiboot2'",
+    "k:check": "grub-file --is-x86-multiboot2 pizza-os.bin && echo '✅ VALID multiboot2' || echo '❌ INVALID'; echo '---'; readelf -l pizza-os.bin | grep -A2 NOTE || true",
+    "k:qemu": "npm run k:build && timeout 8 qemu-system-i386 -kernel pizza-os.bin -nographic -serial mon:stdio",
     "k:qemu:bin": "qemu-system-i386 -kernel pizza-os.bin -display curses -serial none",
+    "k:iso": "mkdir -p iso/boot/grub && cp pizza-os.bin iso/boot/ && echo 'set timeout=0\nset default=0\nmenuentry \"pizza-os\" {\n  multiboot2 /boot/pizza-os.bin\n  boot\n}' > iso/boot/grub/grub.cfg && grub-mkrescue -o pizza-os.iso iso 2>&1 | tail -3 && mkdir -p public && cp pizza-os.iso public/ && ls -lh pizza-os.iso",
+    "k:qemu:iso": "npm run k:iso && timeout 8 qemu-system-i386 -cdrom pizza-os.iso -boot d -nographic",
+    "k:qemu:iso:gui": "qemu-system-i386 -cdrom pizza-os.iso -boot d -display curses",
     "build": "npm run k:build",
     "check": "npm run k:check",
-    "restart": "npm run k:build && pm2 restart pizza-os --update-env || npm run prod",
+    "iso": "npm run k:iso",
+    "restart": "npm run k:build && npm run k:iso && pm2 restart pizza-os --update-env",
     "stop": "pm2 stop pizza-os && pm2 delete pizza-os",
-    "logs": "pm2 logs pizza-os",
-    "status": "pm2 status"
+    "logs": "pm2 logs pizza-os --lines 100",
+    "status": "pm2 status && ls -lh pizza-os.bin public/pizza-os.bin pizza-os.iso public/pizza-os.iso 2>&1 | cat"
   },
   "keywords": [
     "osdev",
@@ -38,11 +40,10 @@
     "kernel",
     "multiboot2"
   ],
-  "dependencies": {
-    "express": "^5.2.1"
-  },
   "devDependencies": {
-    "nodemon": "^3.1.0",
-    "pm2": "^7.0.4"
+    "nodemon": "^3.1.7"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
   }
 }
