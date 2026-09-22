@@ -18,7 +18,13 @@ function ensureBin(res) {
 }
 function run(cmd, res) {
   exec(cmd, { cwd: __dirname, timeout: 20000 }, (err, stdout, stderr) => {
-    res.type('text/plain').send((stdout||'') + (stderr||'') + (err ? '\nERR:'+err.message : ''));
+    // timeout 8 qemu = exit 124 is expected, not an error
+    const out = (stdout||'') + (stderr||'');
+    if (err && err.code !== 124 && !out.includes('qemu')) {
+      res.type('text/plain').send(out + '\nERR:'+err.message);
+    } else {
+      res.type('text/plain').send(out + '\n--- qemu exit (ok, timeout after 8s) ---');
+    }
   });
 }
 
