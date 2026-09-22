@@ -4,57 +4,64 @@
 <title>pizza-os // hacking-pizza.ca</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-  :root{--orange:#ff6a00;--bg:#0a0a0a;--panel:#111;--border:#222}
-  *{box-sizing:border-box}
-  body{background:var(--bg);color:#ccc;font-family:ui-monospace,Menlo,monospace;padding:20px;max-width:900px;margin:0 auto}
-  h1{color:var(--orange);letter-spacing:-1px}
-  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:20px 0}
-  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px}
-  button{background:var(--orange);border:0;padding:12px 18px;margin:4px;border-radius:8px;font-weight:bold;cursor:pointer;color:#000;transition:transform .05s}
-  button:active{transform:scale(.97)}
-  button.secondary{background:#222;color:#ccc;border:1px solid #333}
-  #log{background:#000;padding:14px;white-space:pre-wrap;border:1px solid var(--border);height:520px;overflow:auto;border-radius:10px;font-size:13px;line-height:1.4}
-  .ok{color:#2ecc71} .bad{color:#ff4444} .muted{color:#666}
-  a{color:var(--orange)}
+:root{--orange:#ff6a00;--bg:#0a0a0a;--panel:#111;--border:#222}
+*{box-sizing:border-box} body{background:var(--bg);color:#ccc;font-family:ui-monospace,Menlo,monospace;padding:20px;max-width:900px;margin:0 auto}
+h1{color:var(--orange);letter-spacing:-1px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:20px 0}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px}
+button{background:var(--orange);border:0;padding:12px 18px;margin:4px;border-radius:8px;font-weight:bold;cursor:pointer;color:#000;transition:transform .05s}
+button:active{transform:scale(.97)} button.secondary{background:#222;color:#ccc;border:1px solid #333}
+#log{background:#000;padding:14px;white-space:pre-wrap;border:1px solid var(--border);height:520px;overflow:auto;border-radius:10px;font-size:13px;line-height:1.4}
+.ok{color:#2ecc71} .bad{color:#ff4444} .muted{color:#666} a{color:var(--orange)}
+.badge{display:inline-block;background:#1a1a1a;border:1px solid #333;padding:2px 8px;border-radius:20px;font-size:11px;margin-left:8px}
 </style>
 </head>
 <body>
-  <h1>pizza-os <span class="muted">// impartial</span></h1>
-  <p class="muted">bare metal kernel @ 1MB | no telemetry | <a href="https://github.com/sia-vanna/pizza-os" target="_blank">github</a></p>
+<h1>pizza-os <span class="muted">// impartial</span> <span class="badge">v0.2.1 multiboot2</span></h1>
+<p class="muted">bare metal kernel @ 1MB | no telemetry | <a href="https://github.com/sia-vanna/pizza-os" target="_blank">github</a> | <a href="https://hacking-pizza.ca">hacking-pizza.ca</a></p>
 
-  <div class="grid">
-    <div class="card">
-      <h3>Kernel Build</h3>
-      <button onclick="go('build')">Build + AI</button>
-      <button class="secondary" onclick="go('check')">Check Multiboot2</button>
-      <button class="secondary" onclick="go('qemu')">Boot QEMU 5s</button>
-    </div>
-    <div class="card">
-      <h3>Live ISO</h3>
-      <p class="muted" style="font-size:13px">After build, pizza-os.bin is ready to be written to USB or booted as ISO.</p>
-      <button class="secondary" onclick="go('iso')">Make ISO</button>
-      <button class="secondary" onclick="window.open('/pizza-os.bin')">Download .bin</button>
-    </div>
-  </div>
+<div class="grid">
+<div class="card">
+<h3>Kernel Build</h3>
+<button onclick="go('build')">Build + AI</button>
+<button class="secondary" onclick="go('check')">Check Multiboot2</button>
+<button class="secondary" onclick="go('qemu')" title="Fast PVH direct - shows fallback">Boot QEMU 5s (PVH)</button>
+<button onclick="go('qemu-iso')" style="background:#2ecc71">Boot QEMU ISO (Real Map) ⭐</button>
+</div>
+<div class="card">
+<h3>Live ISO</h3>
+<p class="muted" style="font-size:13px">After build, pizza-os.bin is ready to be written to USB or booted as ISO. ISO = real e820 map.</p>
+<button class="secondary" onclick="go('iso')">Make ISO</button>
+<button class="secondary" onclick="window.open('/pizza-os.bin')">Download .bin</button>
+<button class="secondary" onclick="window.open('/pizza-os.iso')">Download .iso</button>
+</div>
+</div>
 
-  <pre id="log">ready...
-> click Build to compile boot.asm + kernel.cpp + ai_model.cpp
-> if you see SeaBIOS = PVH fix worked ✅
+<pre id="log">ready... > click Build to compile boot.asm + kernel.cpp + ai_model.cpp
+> NEW: Click "Boot QEMU ISO (Real Map)" for full memory map
+> Old "Boot QEMU 5s" = PVH fallback (fast dev only)
 > CI/CD: push to main -> auto deploys here</pre>
 
 <script>
 const logEl = document.getElementById('log');
 async function go(cmd){
-  logEl.textContent = `> ${cmd} running...\n`;
-  logEl.textContent += `> time: ${new Date().toLocaleTimeString()}\n\n`;
-  try{
-    let r = await fetch('/api/'+cmd,{method:'POST'});
-    let t = await r.text();
-    logEl.textContent = t + `\n\n--- ${cmd} done @ ${new Date().toLocaleTimeString()} ---`;
-  }catch(e){
-    logEl.textContent = `❌ ${e.message}\n\nIs server.js running? pm2 logs pizza-os`;
-  }
-  logEl.scrollTop = logEl.scrollHeight;
+ logEl.textContent = `> ${cmd} running...\n> time: ${new Date().toLocaleTimeString()}\n\n`;
+ try{
+   let r = await fetch('/api/'+cmd,{method:'POST'});
+   let t = await r.text();
+   // colorize
+   t = t.replace(/\[OK\].*/g, m => `✅ ${m}`).replace(/\[INFO\].*/g, m => `ℹ️ ${m}`);
+   logEl.textContent = t + `\n\n--- ${cmd} done @ ${new Date().toLocaleTimeString()} ---`;
+   if(cmd==='qemu' && t.includes('fallback')) {
+     logEl.textContent += `\n\n💡 TIP: This is PVH fallback mode. Click "Boot QEMU ISO (Real Map)" for real e820.`;
+   }
+   if(cmd==='qemu-iso' && t.includes('Real memory map')) {
+     logEl.textContent += `\n\n🎉 GRUB multiboot2 SUCCESS - real memory map!`;
+   }
+ }catch(e){
+   logEl.textContent = `❌ ${e.message}\n\nIs server.js running? pm2 logs pizza-os`;
+ }
+ logEl.scrollTop = logEl.scrollHeight;
 }
 </script>
 </body>
