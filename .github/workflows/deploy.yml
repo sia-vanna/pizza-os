@@ -1,62 +1,9 @@
-name: deploy pizza-os
-on:
-  push:
-    branches: [main]
-  workflow_dispatch:
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Deploy files
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.DROPLET_HOST }}
-          username: ${{ secrets.DROPLET_USER }}
-          key: ${{ secrets.DROPLET_SSH_KEY }}
-          source: "server.js,package.json,package-lock.json,public/,scripts/,boot.asm,kernel.cpp,mm.cpp,mm.h,ai_model.cpp,ai_model.h,linker.ld,README.md"
-          target: "/opt/pizza-os"
-          overwrite: true
-
-      - name: Build + Restart
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.DROPLET_HOST }}
-          username: ${{ secrets.DROPLET_USER }}
-          key: ${{ secrets.DROPLET_SSH_KEY }}
-          script: |
-            set -e
-            cd /opt/pizza-os
-
-            if ! node -v | grep -q "v20"; then
-              curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-              sudo apt-get install -y nodejs
-            fi
-
-            sudo apt-get update -qq
-            sudo apt-get install -y -qq nasm g++-multilib binutils qemu-system-x86 grub-common grub-pc-bin xorriso mtools > /dev/null
-
-            npm install --include=dev
-            npm install -g pm2 || true
-
-            # build bin + iso
-            npm run k:build
-            npm run k:iso || echo "iso build failed but continuing"
-            mkdir -p public
-            cp pizza-os.bin public/ || true
-            cp pizza-os.iso public/ || true
-            ls -lh pizza-os.bin pizza-os.iso public/
-
-            # copy to nginx if you have it
-            sudo mkdir -p /var/www/pizza-os
-            sudo cp -r public/* /var/www/pizza-os/ 2>/dev/null || true
-            sudo cp pizza-os.bin /var/www/pizza-os/ 2>/dev/null || true
-            sudo cp pizza-os.iso /var/www/pizza-os/ 2>/dev/null || true
-            sudo chown -R www-data:www-data /var/www/pizza-os || true
-
-            pm2 restart pizza-os --update-env || NODE_ENV=production pm2 start server.js --name pizza-os --update-env
-            pm2 save
-            pm2 list
-            pm2 logs pizza-os --lines 20 --nostream || true
+- name: Deploy files
+  uses: appleboy/scp-action@v0.1.7
+  with:
+    host: ${{ secrets.DROPLET_HOST }}
+    username: ${{ secrets.DROPLET_USER }}
+    key: ${{ secrets.DROPLET_SSH_KEY }}
+    source: ".,!./.git,!./node_modules,!./.github"
+    target: "/opt/pizza-os"
+    overwrite: true
