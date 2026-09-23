@@ -4,6 +4,7 @@
     host: ${{ secrets.DROPLET_HOST }}
     username: ${{ secrets.DROPLET_USER }}
     key: ${{ secrets.DROPLET_SSH_KEY }}
-    source: ".,!./.git,!./node_modules,!./.github"
+    source: "server.js,package.json,package-lock.json,boot.asm,linker.ld,kernel.cpp,mm.cpp,mm.h,fs.cpp,fs.h,user.cpp,user.h,ai_model.cpp,ai_model.h,public,scripts"
     target: "/opt/pizza-os"
     overwrite: true
+    strip_components: 0
