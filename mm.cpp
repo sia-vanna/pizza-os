@@ -1,7 +1,7 @@
 #include "mm.h"
-extern void print(const char*, unsigned char);
-extern void print_hex(uint64_t, unsigned char);
+
 #define MB2_MAGIC 0x36d76289
+
 static MemRegion regions[64];
 static int region_count = 0;
 static uint64_t next_free = 0;
@@ -9,21 +9,28 @@ static uint64_t free_end = 0;
 static bool has_real_map = false;
 
 static void set_fallback() {
-    next_free = 0x1000000;
-    free_end = 0x4000000;
+    next_free = 0x1000000; // 16MB
+    free_end = 0x4000000; // 64MB
     has_real_map = false;
 }
 
 bool mm_init(uint32_t magic, uint32_t mb_info_ptr) {
     region_count = 0;
     has_real_map = false;
-    if (magic!= MB2_MAGIC || mb_info_ptr == 0) { set_fallback(); return false; }
+
+    if (magic!= MB2_MAGIC || mb_info_ptr == 0) {
+        set_fallback();
+        return false;
+    }
 
     uint8_t* ptr = (uint8_t*)(uintptr_t)mb_info_ptr;
     if (!ptr) { set_fallback(); return false; }
 
     uint32_t total_size = *(uint32_t*)ptr;
-    if (total_size < 8 || total_size > 0x100000) { set_fallback(); return false; }
+    if (total_size < 8 || total_size > 0x100000) {
+        set_fallback();
+        return false;
+    }
 
     uint8_t* tag = ptr + 8;
     uint8_t* end = ptr + total_size;
@@ -33,7 +40,8 @@ bool mm_init(uint32_t magic, uint32_t mb_info_ptr) {
         uint32_t size = *(uint32_t*)(tag + 4);
         if (type == 0 || size < 8) break;
         if ((uintptr_t)tag + size > (uintptr_t)end) break;
-        if (type == 6) {
+
+        if (type == 6) { // memory map
             uint32_t entry_size = *(uint32_t*)(tag + 8);
             if (entry_size == 0) { tag += (size + 7) & ~7u; continue; }
             uint8_t* entry = tag + 16;
@@ -56,7 +64,11 @@ bool mm_init(uint32_t magic, uint32_t mb_info_ptr) {
             best_len = regions[i].length;
         }
     }
-    if (best_len == 0) { set_fallback(); return false; }
+
+    if (best_len == 0) {
+        set_fallback();
+        return false;
+    }
 
     next_free = best_base;
     free_end = best_base + best_len;
@@ -71,21 +83,16 @@ void* mm_alloc_pages(uint32_t count) {
     next_free += size;
     return result;
 }
+
 uint64_t mm_total_usable_bytes() {
     if (!has_real_map) return free_end - 0x1000000;
     uint64_t total = 0;
-    for (int i = 0; i < region_count; i++) if (regions[i].type == 1) total += regions[i].length;
+    for (int i = 0; i < region_count; i++)
+        if (regions[i].type == 1) total += regions[i].length;
     return total;
 }
+
+// CLEAN — no VGA spam
 void mm_print_map() {
-    if (!has_real_map) {
-        print(" MEMORY MAP: (PVH fallback - use GRUB ISO for real map)\n", 0x0E);
-        print(" usable: 0x", 0x07); print_hex(0x1000000, 0x0F);
-        print(" - 0x", 0x07); print_hex(0x4000000, 0x0F); print("\n", 0x07); return;
-    }
-    print(" MEMORY MAP: (real multiboot2)\n", 0x0A);
-    for (int i = 0; i < region_count; i++) {
-        print(" base=0x", 0x07); print_hex(regions[i].base, 0x0F);
-        print(regions[i].type == 1? " [usable]\n" : " [reserved]\n", regions[i].type == 1? 0x0A : 0x08);
-    }
+    // intentionally silent for clean UI
 }

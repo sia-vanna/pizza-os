@@ -1,35 +1,5 @@
-<!doctype html><html><head><meta charset="utf-8"><title>pizza-os</title>
-<style>body{background:#0a0a0a;color:#0f0;font-family:monospace;padding:20px}
-#term{width:900px;max-width:95vw;height:520px;background:#000;border:1px solid #333;padding:12px;overflow:auto;white-space:pre-wrap;outline:none}
-#term:focus{border-color:#0f0}
-</style></head><body>
-<h3>🍕 pizza-os — vanna / pizza — click box then type</h3>
-<div id="term" tabindex="0">loading...</div>
-<button id="c">reconnect</button> <button id="b">build</button>
-<script>
-const term=document.getElementById('term');
-let ws=null;
-function print(s){ term.textContent+=s; term.scrollTop=term.scrollHeight; }
-function connect(){
- if(ws) ws.close();
- term.textContent='';
- ws=new WebSocket((location.protocol==='https:'?'wss:':'ws:')+location.host+'/ws');
- ws.binaryType='arraybuffer';
- ws.onopen=()=>{ print('[connected — click box to focus]\n'); term.focus(); };
- ws.onmessage=e=>{ print(typeof e.data==='string'?e.data:new TextDecoder().decode(e.data)); };
- ws.onclose=()=>print('\n[disconnected]\n');
-}
-document.getElementById('c').onclick=connect;
-document.getElementById('b').onclick=()=>fetch('/api/build',{method:'POST'}).then(r=>r.text()).then(print);
-
-// ONE listener only
-document.addEventListener('keydown', e=>{
- if(!ws||ws.readyState!==1) return;
- if(e.ctrlKey||e.metaKey||e.altKey) return;
- if(e.key.length===1){ ws.send(e.key); e.preventDefault(); }
- else if(e.key==='Enter'){ ws.send('\r'); e.preventDefault(); }
- else if(e.key==='Backspace'){ ws.send('\x7f'); e.preventDefault(); }
-});
-term.addEventListener('click',()=>term.focus());
-connect();
-</script></body></html>
+<!doctype html><html><head><meta charset="utf-8"><title>pizza-os</title><link rel="stylesheet" href="/style.css"></head>
+<body><header><h1>🍕 <span>HACKINGPIZZA.CA</span> // PIZZA-OS</h1><div class="controls"><button id="c">reconnect</button><button id="b">build</button></div></header>
+<div id="term-wrap"><div id="term" tabindex="0">loading...</div></div>
+<footer><b>vanna / pizza</b> to login — local only, no tracking</footer>
+<script src="/app.js"></script></body></html>

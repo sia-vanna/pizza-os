@@ -1,58 +1,55 @@
-section .multiboot2
+section .multiboot
 align 8
-mb2_start:
- dd 0xe85250d6
- dd 0
- dd mb2_end - mb2_start
- dd -(0xe85250d6 + 0 + (mb2_end - mb2_start))
- dw 0,0
- dd 8
-mb2_end:
+dd 0xE85250D6
+dd 0
+dd 24
+dd -(0xE85250D6 + 0 + 24)
+dw 0
+dw 0
+dd 8
 
-section .note
+section .note.Xen
 align 4
- dd 4
- dd 4
- dd 18
- db "Xen",0
-align 4
- dd _start
-align 4
+dd 4
+dd 4
+dd 18
+db "Xen",0
+dd _start
 
 section .text
 global _start
 extern kernel_main
 _start:
  cli
- ; --- SERIAL 0x3F8 EARLY INIT ---
  mov dx, 0x3F8+1
- mov al, 0x00
- out dx, al        ; disable interrupts
+ xor al, al
+ out dx, al
  mov dx, 0x3F8+3
  mov al, 0x80
- out dx, al        ; enable DLAB
+ out dx, al
  mov dx, 0x3F8+0
  mov al, 0x03
- out dx, al        ; divisor low 3 = 38400 baud
+ out dx, al
  mov dx, 0x3F8+1
- mov al, 0x00
- out dx, al        ; divisor high
+ xor al, al
+ out dx, al
  mov dx, 0x3F8+3
  mov al, 0x03
- out dx, al        ; 8n1
+ out dx, al
  mov dx, 0x3F8+2
  mov al, 0xC7
- out dx, al        ; enable FIFO
+ out dx, al
  mov dx, 0x3F8+4
  mov al, 0x0B
- out dx, al        ; IRQs, RTS/DSR set
- ; -------------------------------
-
+ out dx, al
+ mov edi, 0xB8000
+ mov ecx, 80*25
+ mov ax, 0x0F20
+ rep stosw
  mov esp, stack_top
- push ebx          ; multiboot info
- push eax          ; magic
+ push ebx
+ push eax
  call kernel_main
-
 .hang: hlt
  jmp .hang
 
