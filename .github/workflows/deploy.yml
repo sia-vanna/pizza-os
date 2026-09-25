@@ -16,7 +16,7 @@ jobs:
           host: ${{ secrets.DROPLET_HOST }}
           username: ${{ secrets.DROPLET_USER }}
           key: ${{ secrets.DROPLET_SSH_KEY }}
-          source: "server.js,package.json,package-lock.json,public/,scripts/,boot.asm,kernel.cpp,mm.cpp,mm.h,fs.cpp,fs.h,user.cpp,user.h,ai_model.cpp,ai_model.h,linker.ld,README.md"
+          source: "server.js,package.json,package-lock.json,public/,scripts/,boot.asm,kernel.cpp,mm.cpp,mm.h,fs.cpp,fs.h,user.cpp,user.h,ai_model.cpp,ai_model.h,scheduler.cpp,scheduler.h,paging.cpp,paging.h,linker.ld,README.md"
           target: "/opt/pizza-os"
           overwrite: true
 

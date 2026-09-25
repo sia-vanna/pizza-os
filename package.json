@@ -19,7 +19,7 @@
     "prod": "npm run k:build && npm run k:iso && NODE_ENV=production pm2 start server.js --name pizza-os --update-env || pm2 restart pizza-os --update-env",
     "setup": "./scripts/setup.sh",
     "k:clean": "rm -f *.o *.bin *.iso && rm -rf iso/ && rm -f public/pizza-os.bin public/pizza-os.iso",
-    "k:build": "nasm -f elf32 boot.asm -o boot.o && g++ -m32 -ffreestanding -O2 -c kernel.cpp -o kernel.o && g++ -m32 -ffreestanding -O2 -c mm.cpp -o mm.o && g++ -m32 -ffreestanding -O2 -c fs.cpp -o fs.o && g++ -m32 -ffreestanding -O2 -c user.cpp -o user.o && g++ -m32 -ffreestanding -O2 -c ai_model.cpp -o ai_model.o && ld -m elf_i386 -T linker.ld -o pizza-os.bin boot.o kernel.o mm.o fs.o user.o ai_model.o -nostdlib && mkdir -p public && cp pizza-os.bin public/pizza-os.bin && ls -lh pizza-os.bin && grub-file --is-x86-multiboot2 pizza-os.bin && echo '✅ VALID'",
+    "k:build": "./scripts/build.sh",
     "k:check": "grub-file --is-x86-multiboot2 pizza-os.bin && echo '✅ VALID multiboot2' || echo '❌ INVALID'; echo '---'; readelf -l pizza-os.bin | grep -A2 NOTE || true",
     "k:qemu": "npm run k:build && timeout 8 qemu-system-i386 -kernel pizza-os.bin -nographic -serial mon:stdio",
     "k:qemu:bin": "qemu-system-i386 -kernel pizza-os.bin -display curses -serial none",
