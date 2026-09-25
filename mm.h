@@ -1,15 +1,14 @@
 #pragma once
 #include <stdint.h>
+#include <stddef.h>
+void mm_init(uint32_t magic, uint32_t mb_info);
+void* kmalloc(size_t size);
+void kfree(void* ptr);
+void* krealloc(void* ptr, size_t size);
 
-struct MemRegion {
-  uint64_t base;
-  uint64_t length;
-  uint32_t type; // 1 = usable
-};
-
-
-bool mm_init(uint32_t magic, uint32_t mb_info_ptr);
-
-void* mm_alloc_pages(uint32_t count);
-uint64_t mm_total_usable_bytes();
-void mm_print_map();
+// C++ new/delete
+inline void* operator new(size_t s){ return kmalloc(s); }
+inline void* operator new[](size_t s){ return kmalloc(s); }
+inline void operator delete(void* p) noexcept { kfree(p); }
+inline void operator delete[](void* p) noexcept { kfree(p); }
+inline void operator delete(void* p, size_t) noexcept { kfree(p); }

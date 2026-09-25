@@ -2,41 +2,57 @@
 #include "mm.h"
 #include <stdint.h>
 
-static int k_strlen(const char* s){ int i=0; while(s[i]) i++; return i; }
-static void k_strcpy(char* d, const char* s){ while(*s) *d++=*s++; *d=0; }
-static int k_strcmp(const char* a, const char* b){ while(*a && *a==*b){a++;b++;} return (unsigned char)*a - (unsigned char)*b; }
-
-#define MAX_FILES 16
-static file files[MAX_FILES];
+static File files[16];
 static int file_count=0;
 
-bool fs_init(uint32_t mbi){
-    (void)mbi;
-    file_count=0;
+bool fs_init(uint32_t mb_info){
+ (void)mb_info;
+ file_count=2;
 
-    k_strcpy(files[0].path, "/etc/passwd");
-    const char* pw = "root:x:0:0:root:/root:/bin/sh\nvanna:x:1000:1000::/home/vanna:/bin/sh\n";
-    files[0].size = k_strlen(pw);
-    files[0].data = (uint8_t*)mm_alloc_pages(1);
-    for(int i=0;i<files[0].size;i++) files[0].data[i]=pw[i];
-    files[0].data[files[0].size]=0;
+ // 0: readme
+ files[0].name="readme.txt";
+ files[0].data=(uint8_t*)kmalloc(4096);
+ if(!files[0].data) return false;
+ const char* t="Welcome to PizzaOS FS\n";
+ int i=0; for(; t[i]; i++) files[0].data[i]=(uint8_t)t[i];
+ files[0].size=i;
 
-    k_strcpy(files[1].path, "/etc/shadow");
-    const char* sh = "root:pizza\nvanna:pizza\n";
-    files[1].size = k_strlen(sh);
-    files[1].data = (uint8_t*)mm_alloc_pages(1);
-    for(int i=0;i<files[1].size;i++) files[1].data[i]=sh[i];
-    files[1].data[files[1].size]=0;
+ // 1: shadow - vanna:pizza and root:root
+ files[1].name="shadow";
+ files[1].data=(uint8_t*)kmalloc(4096);
+ if(!files[1].data) return false;
+ const char* s="vanna:pizza\nroot:root\n";
+ int j=0; for(; s[j]; j++) files[1].data[j]=(uint8_t)s[j];
+ files[1].size=j;
+ files[1].data[files[1].size]=0;
 
-    file_count=2;
-    return true; // silent
+ return true;
 }
 
-file* fs_open(const char* path){
-    for(int i=0;i<file_count;i++) if(k_strcmp(files[i].path, path)==0) return &files[i];
-    return 0;
+File* fs_find(const char* name){
+ // strip leading / and etc/
+ const char* n=name;
+ if(n[0]=='/') n++;
+ if(n[0]=='e' && n[1]=='t' && n[2]=='c' && n[3]=='/') n+=4;
+
+ for(int i=0;i<file_count;i++){
+   const char* a=files[i].name; const char* b=n;
+   int k=0; for(; a[k] && b[k] && a[k]==b[k]; k++);
+   if(a[k]==b[k]) return &files[i];
+ }
+ return nullptr;
+}
+
+int fs_list(File** out, int max){
+ int n=file_count<max?file_count:max;
+ for(int i=0;i<n;i++) out[i]=&files[i];
+ return n;
 }
 
 void fs_list(){
-    // silent for clean UI — keep function for compatibility
+ extern void print(const char*, unsigned char);
+ for(int i=0;i<file_count;i++){
+   print(files[i].name,0x0F);
+   print("\n",0x0F);
+ }
 }
